@@ -2,6 +2,10 @@
 
 Northstar Learning is a full-stack learning management system starter. Students can discover courses and manage their enrollments; teachers can publish courses; administrators can manage users and course data through Django Admin. The project uses Django REST Framework and SQLite on the backend, with a responsive React frontend.
 
+## Splash page concept
+
+![Northstar Learning splash page concept](splash_page_idea.JPG)
+
 ## Project layout
 
 ```text
@@ -32,7 +36,7 @@ The initial desktop dashboard uses a persistent left navigation rail and a conte
 └─────────────────────┴──────────────────────────────────────────────────┘
 ```
 
-The sign-in and account-creation screens use the same restrained palette (forest green, soft mint, warm white and muted neutral text). Course and account forms have visible labels, keyboard focus indicators, responsive layouts and accessible status/error messages.
+The sign-in and account-creation screens use the same restrained monochrome palette of black, white and muted grays. Course and account forms have visible labels, keyboard focus indicators, responsive layouts and accessible status/error messages.
 
 ## Technology and dependencies
 
