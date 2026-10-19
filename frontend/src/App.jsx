@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { api } from "./api.js";
 
+// Human-readable role labels are shared by the dashboard's profile and summary cards.
 const roleNames = {
   student: "Student",
   teacher: "Teacher",
@@ -22,6 +23,7 @@ function AuthForm({ onAuthenticated }) {
     const password = form.get("password");
 
     try {
+      // Registration creates the account first; both flows then use the same login/current-user path.
       if (isRegistering) {
         await api.register({
           username,
@@ -102,6 +104,7 @@ function AuthForm({ onAuthenticated }) {
 }
 
 function CourseCard({ course, isEnrolled, canEnroll, onEnroll, onUnenroll }) {
+  // A card receives display data and callbacks; Dashboard owns the API calls and enrollment state.
   return (
     <article className="course-card">
       <div className="course-art" aria-hidden="true">
@@ -131,6 +134,7 @@ function CourseCard({ course, isEnrolled, canEnroll, onEnroll, onUnenroll }) {
 }
 
 function Dashboard({ user, token, onLogout }) {
+  // Dashboard state is refreshed from the API; role flags control which actions and views are shown.
   const [courses, setCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
   const [activeView, setActiveView] = useState("overview");
@@ -146,6 +150,7 @@ function Dashboard({ user, token, onLogout }) {
   const canEnroll = user.role === "student";
 
   const loadDashboard = useCallback(async () => {
+    // Catalog data is public, while only students need their private enrollment list.
     setIsLoading(true);
     setError("");
     try {
@@ -166,6 +171,7 @@ function Dashboard({ user, token, onLogout }) {
   }, [loadDashboard]);
 
   async function changeEnrollment(courseId, action) {
+    // After a write, reload both lists so counts and enrolled badges reflect server state.
     setError("");
     try {
       await action(courseId, token);
@@ -177,6 +183,7 @@ function Dashboard({ user, token, onLogout }) {
   }
 
   async function handleSaveCourse(event) {
+    // The same form creates or edits depending on editingCourse, then refreshes the catalog.
     event.preventDefault();
     const formElement = event.currentTarget;
     setError("");
@@ -201,6 +208,7 @@ function Dashboard({ user, token, onLogout }) {
   }
 
   async function handleDeleteCourse(course) {
+    // Deleting a course also deletes its enrollments on the backend, so confirm the cascade.
     if (!window.confirm(`Delete "${course.title}" and its enrollments?`)) return;
     setError("");
     try {
@@ -219,6 +227,7 @@ function Dashboard({ user, token, onLogout }) {
     (course) => user.role === "admin" || course.teacher === user.id,
   );
 
+  // Navigation switches local views; the corresponding sections below share the same loaded data.
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -353,6 +362,7 @@ function Dashboard({ user, token, onLogout }) {
 }
 
 function CourseList({ courses, enrolledIds, canEnroll, onEnroll, onUnenroll, isLoading }) {
+  // Keep loading and empty states consistent wherever the catalog list is rendered.
   if (isLoading) return <p className="empty-state">Loading courses…</p>;
   if (courses.length === 0) {
     return <p className="empty-state">No courses here just yet. Check back soon for a new place to start.</p>;
@@ -374,12 +384,14 @@ function CourseList({ courses, enrolledIds, canEnroll, onEnroll, onUnenroll, isL
 }
 
 export default function App() {
+  // The root restores a saved access token, resolves its user, then selects auth or dashboard UI.
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem("northstar-access-token"));
   const [isRestoringSession, setIsRestoringSession] = useState(Boolean(token));
 
   useEffect(() => {
     if (!token) return;
+    // Invalid/expired tokens are cleared so the app returns to the sign-in form.
     api.currentUser(token)
       .then(setUser)
       .catch(() => {
@@ -390,12 +402,14 @@ export default function App() {
   }, [token]);
 
   function handleAuthenticated(authenticatedUser, accessToken) {
+    // Persist only the access token; Dashboard receives it for later authenticated API requests.
     localStorage.setItem("northstar-access-token", accessToken);
     setToken(accessToken);
     setUser(authenticatedUser);
   }
 
   function handleLogout() {
+    // Clear both persisted and in-memory session state on sign-out.
     localStorage.removeItem("northstar-access-token");
     setToken(null);
     setUser(null);

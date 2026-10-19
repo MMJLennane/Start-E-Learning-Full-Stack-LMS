@@ -13,8 +13,10 @@ const courses = [
   },
 ];
 
+// UI tests mock the API boundary and verify user-visible authentication flows.
 describe("Learning Management System", () => {
   beforeEach(() => {
+    // Isolate persisted sessions and mock behavior between tests.
     localStorage.clear();
     vi.restoreAllMocks();
   });
@@ -24,6 +26,7 @@ describe("Learning Management System", () => {
   });
 
   it("shows the sign-in experience and lets a student explore courses", async () => {
+    // Simulate the sequence: obtain a JWT, resolve the user, then load dashboard data.
     const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
       if (String(url).endsWith("/auth/token/")) {
         return Response.json({ access: "access-token", refresh: "refresh-token" });
@@ -49,6 +52,7 @@ describe("Learning Management System", () => {
   });
 
   it("offers account registration", () => {
+    // Registration mode is a UI state change before submitting the registration request.
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Create an account" }));
 
@@ -57,6 +61,7 @@ describe("Learning Management System", () => {
   });
 
   it("shows API failures instead of silently hiding them", async () => {
+    // Verify errors from the API client reach an accessible alert in the form.
     vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
       if (String(url).endsWith("/auth/token/")) {
         return new Response(JSON.stringify({ detail: "Invalid credentials." }), { status: 401 });

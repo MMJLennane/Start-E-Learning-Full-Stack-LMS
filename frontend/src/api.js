@@ -1,5 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000/api";
 
+// Centralize fetch details so UI components share JSON handling, JWT auth, and API errors.
 async function request(path, { token, ...options } = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
@@ -19,6 +20,7 @@ async function request(path, { token, ...options } = {}) {
   return response.status === 204 ? null : response.json();
 }
 
+// These operations match Django URL routes; authenticated calls pass the access token here.
 export const api = {
   listCourses: () => request("/courses/"),
   register: (details) =>

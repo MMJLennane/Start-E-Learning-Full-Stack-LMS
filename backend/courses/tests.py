@@ -6,6 +6,7 @@ from .models import Course, Enrollment
 User = get_user_model()
 
 
+# API tests cover public catalog access, student enrollment, and teacher ownership rules.
 class CourseApiTests(APITestCase):
     def setUp(self):
         self.student = User.objects.create_user(username="student", password="a-good-password")

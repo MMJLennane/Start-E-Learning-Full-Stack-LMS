@@ -3,6 +3,7 @@ from django.contrib import admin
 from .models import Course, Enrollment
 
 
+# Admin views expose searchable course ownership and enrollment records for staff maintenance.
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
     list_display = ("title", "teacher", "created_at")

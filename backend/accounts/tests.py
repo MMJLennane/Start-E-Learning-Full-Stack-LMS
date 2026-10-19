@@ -4,6 +4,7 @@ from rest_framework.test import APITestCase
 User = get_user_model()
 
 
+# API-level checks for the public registration endpoint and its security constraints.
 class RegistrationTests(APITestCase):
     def test_registration_creates_a_student_and_does_not_allow_role_escalation(self):
         response = self.client.post(

@@ -3,6 +3,7 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 from accounts.models import User
 
 
+# Shared by CourseViewSet: public reads, teacher/admin writes, and student-only enrollment actions.
 class IsTeacherOrAdminOrReadOnly(BasePermission):
     def has_permission(self, request, view):
         if getattr(view, "action", None) in ("enroll", "unenroll"):

@@ -5,6 +5,7 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
+    # This is the safe user shape returned to the signed-in frontend.
     class Meta:
         model = User
         fields = ("id", "username", "email", "role")
@@ -12,6 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
+    # Passwords are accepted only as input; Django's user manager hashes them.
     password = serializers.CharField(write_only=True, min_length=8)
 
     class Meta:

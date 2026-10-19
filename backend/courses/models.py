@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 
 
+# A course belongs to its teacher; enrollments connect student accounts to courses.
 class Course(models.Model):
     title = models.CharField(max_length=160)
     description = models.TextField()
@@ -20,6 +21,7 @@ class Course(models.Model):
 
 
 class Enrollment(models.Model):
+    # The database uniqueness rule makes repeated enrollment requests safe from duplicates.
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
