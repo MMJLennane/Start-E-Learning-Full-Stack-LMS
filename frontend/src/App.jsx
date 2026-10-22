@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { api } from "./api.js";
+import AuthForm from "./components/AuthForm.jsx";
+import CourseList from "./components/CourseList.jsx";
+import AdminDashboard, { permissions as adminPermissions } from "./roles/AdminDashboard.jsx";
+import StudentDashboard, { permissions as studentPermissions } from "./roles/StudentDashboard.jsx";
+import TeacherDashboard, { permissions as teacherPermissions } from "./roles/TeacherDashboard.jsx";
 
 // Human-readable role labels are shared by the dashboard's profile and summary cards.
 const roleNames = {
@@ -9,129 +14,11 @@ const roleNames = {
   admin: "Administrator",
 };
 
-function AuthForm({ onAuthenticated }) {
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setError("");
-    setIsSubmitting(true);
-    const form = new FormData(event.currentTarget);
-    const username = form.get("username");
-    const password = form.get("password");
-
-    try {
-      // Registration creates the account first; both flows then use the same login/current-user path.
-      if (isRegistering) {
-        await api.register({
-          username,
-          email: form.get("email"),
-          password,
-        });
-      }
-      const tokens = await api.login({ username, password });
-      const user = await api.currentUser(tokens.access);
-      onAuthenticated(user, tokens.access);
-    } catch (requestError) {
-      setError(requestError.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  return (
-    <main className="auth-layout">
-      <section className="auth-copy">
-        <span className="eyebrow">NORTHSTAR LEARNING</span>
-        <h1>Make room for what you want to learn.</h1>
-        <p>A thoughtful home for your courses, progress, and next big idea.</p>
-        <div className="auth-note">
-          <span className="note-mark" aria-hidden="true">✳</span>
-          <span>Small steps add up. Start with one course.</span>
-        </div>
-      </section>
-      <section className="auth-card" aria-labelledby="auth-title">
-        <div className="brand-mark" aria-hidden="true">N</div>
-        <p className="eyebrow">YOUR LEARNING SPACE</p>
-        <h2 id="auth-title">{isRegistering ? "Create your account" : "Welcome back"}</h2>
-        <p className="muted">
-          {isRegistering ? "Join the community and find your next course." : "Sign in to continue learning."}
-        </p>
-        <form onSubmit={handleSubmit} className="stack">
-          <label>
-            Username
-            <input name="username" autoComplete="username" required />
-          </label>
-          {isRegistering && (
-            <label>
-              Email <span className="optional">(optional)</span>
-              <input name="email" type="email" autoComplete="email" />
-            </label>
-          )}
-          <label>
-            Password
-            <input
-              name="password"
-              type="password"
-              autoComplete={isRegistering ? "new-password" : "current-password"}
-              minLength={isRegistering ? 8 : undefined}
-              required
-            />
-          </label>
-          {error && <p className="form-error" role="alert">{error}</p>}
-          <button className="button button-primary full-width" disabled={isSubmitting}>
-            {isSubmitting ? "Please wait…" : isRegistering ? "Create account" : "Sign in"}
-          </button>
-        </form>
-        <p className="switch-auth">
-          {isRegistering ? "Already have an account?" : "New to Northstar?"}{" "}
-          <button
-            className="text-button"
-            type="button"
-            onClick={() => {
-              setError("");
-              setIsRegistering(!isRegistering);
-            }}
-          >
-            {isRegistering ? "Sign in" : "Create an account"}
-          </button>
-        </p>
-      </section>
-    </main>
-  );
-}
-
-function CourseCard({ course, isEnrolled, canEnroll, onEnroll, onUnenroll }) {
-  // A card receives display data and callbacks; Dashboard owns the API calls and enrollment state.
-  return (
-    <article className="course-card">
-      <div className="course-art" aria-hidden="true">
-        <span>{course.title.slice(0, 1).toUpperCase()}</span>
-      </div>
-      <div className="course-content">
-        <div className="course-meta">
-          <span className="course-tag">SELF-PACED</span>
-          {isEnrolled && <span className="enrolled-tag">ENROLLED</span>}
-        </div>
-        <h3>{course.title}</h3>
-        <p>{course.description}</p>
-        <div className="course-footer">
-          <span className="teacher-name">with {course.teacher_name}</span>
-          {canEnroll && (
-            <button
-              className={`button ${isEnrolled ? "button-quiet" : "button-outline"}`}
-              onClick={() => (isEnrolled ? onUnenroll(course.id) : onEnroll(course.id))}
-            >
-              {isEnrolled ? "Leave course" : "Explore course"}
-            </button>
-          )}
-        </div>
-      </div>
-    </article>
-  );
-}
+const roleModules = {
+  student: { component: StudentDashboard, permissions: studentPermissions },
+  teacher: { component: TeacherDashboard, permissions: teacherPermissions },
+  admin: { component: AdminDashboard, permissions: adminPermissions },
+};
 
 function Dashboard({ user, token, onLogout }) {
   // Dashboard state is refreshed from the API; role flags control which actions and views are shown.
@@ -142,12 +29,14 @@ function Dashboard({ user, token, onLogout }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingCourse, setIsCreatingCourse] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
+  const roleModule = roleModules[user.role];
+  const RoleDashboard = roleModule?.component;
   const enrolledIds = useMemo(
     () => new Set(enrollments.map((enrollment) => enrollment.course.id)),
     [enrollments],
   );
-  const canManageCourses = user.role === "teacher" || user.role === "admin";
-  const canEnroll = user.role === "student";
+  const canManageCourses = roleModule?.permissions.canManageCourses ?? false;
+  const canEnroll = roleModule?.permissions.canEnroll ?? false;
 
   const loadDashboard = useCallback(async () => {
     // Catalog data is public, while only students need their private enrollment list.
@@ -278,34 +167,17 @@ function Dashboard({ user, token, onLogout }) {
         </header>
 
         <section className="page-content">
-          {activeView === "overview" && (
-            <>
-              <div className="welcome-row">
-                <div>
-                  <p className="eyebrow">YOUR LEARNING, AT A GLANCE</p>
-                  <h1>Good to see you, {user.username} <span aria-hidden="true">✳</span></h1>
-                  <p className="muted">A little progress each day adds up to big results.</p>
-                </div>
-                <button className="button button-primary" onClick={() => setActiveView("courses")}>Find a course <span aria-hidden="true">↗</span></button>
-              </div>
-              <div className="stats-grid">
-                <div className="stat-card"><span className="stat-icon mint" aria-hidden="true">▤</span><span className="stat-label">{canEnroll ? "COURSES IN PROGRESS" : "COURSES AVAILABLE"}</span><strong>{canEnroll ? enrollments.length : courses.length}</strong><span className="stat-foot">{canEnroll ? "Your learning journey" : "In the course library"}</span></div>
-                <div className="stat-card"><span className="stat-icon peach" aria-hidden="true">✳</span><span className="stat-label">YOUR ROLE</span><strong className="role-stat">{roleNames[user.role] ?? user.role}</strong><span className="stat-foot">Your workspace is ready</span></div>
-                <div className="stat-card stat-card-feature"><span className="stat-label">A NOTE TO SELF</span><strong>Curiosity looks<br />good on you.</strong><span className="stat-foot">Keep showing up.</span><span className="feature-sun" aria-hidden="true">✳</span></div>
-              </div>
-              <div className="section-heading">
-                <div><p className="eyebrow">A PLACE TO BEGIN</p><h2>Picked for your next step</h2></div>
-                <button className="text-button" onClick={() => setActiveView("courses")}>View all courses <span aria-hidden="true">→</span></button>
-              </div>
-              <CourseList
-                courses={courses.slice(0, 3)}
-                enrolledIds={enrolledIds}
-                canEnroll={canEnroll}
-                onEnroll={(id) => changeEnrollment(id, api.enroll)}
-                onUnenroll={(id) => changeEnrollment(id, api.unenroll)}
-                isLoading={isLoading}
-              />
-            </>
+          {activeView === "overview" && RoleDashboard && (
+            <RoleDashboard
+              user={user}
+              courses={courses}
+              enrollments={enrollments}
+              enrolledIds={enrolledIds}
+              onViewCourses={() => setActiveView("courses")}
+              onEnroll={(id) => changeEnrollment(id, api.enroll)}
+              onUnenroll={(id) => changeEnrollment(id, api.unenroll)}
+              isLoading={isLoading}
+            />
           )}
 
           {(activeView === "courses" || activeView === "enrolled") && (
@@ -354,31 +226,10 @@ function Dashboard({ user, token, onLogout }) {
             </div>
           )}
 
+          {!RoleDashboard && <div className="error-banner" role="alert">This account has an unsupported role: {user.role}.</div>}
           {error && <div className="error-banner" role="alert">{error}</div>}
         </section>
       </main>
-    </div>
-  );
-}
-
-function CourseList({ courses, enrolledIds, canEnroll, onEnroll, onUnenroll, isLoading }) {
-  // Keep loading and empty states consistent wherever the catalog list is rendered.
-  if (isLoading) return <p className="empty-state">Loading courses…</p>;
-  if (courses.length === 0) {
-    return <p className="empty-state">No courses here just yet. Check back soon for a new place to start.</p>;
-  }
-  return (
-    <div className="course-grid">
-      {courses.map((course) => (
-        <CourseCard
-          key={course.id}
-          course={course}
-          isEnrolled={enrolledIds.has(course.id)}
-          canEnroll={canEnroll}
-          onEnroll={onEnroll}
-          onUnenroll={onUnenroll}
-        />
-      ))}
     </div>
   );
 }
