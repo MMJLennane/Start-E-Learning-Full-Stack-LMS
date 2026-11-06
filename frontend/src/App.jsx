@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
 import { api } from "./api.js";
 import AuthForm from "./components/AuthForm.jsx";
+import Button from "./components/button/button.jsx";
 import CourseList from "./components/CourseList.jsx";
 import AdminDashboard, { permissions as adminPermissions } from "./roles/AdminDashboard.jsx";
 import StudentDashboard, { permissions as studentPermissions } from "./roles/StudentDashboard.jsx";
@@ -20,11 +22,12 @@ const roleModules = {
   admin: { component: AdminDashboard, permissions: adminPermissions },
 };
 
-function Dashboard({ user, token, onLogout }) {
+function Dashboard({ user, token, onLogout, defaultView = "overview" }) {
   // Dashboard state is refreshed from the API; role flags control which actions and views are shown.
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
-  const [activeView, setActiveView] = useState("overview");
+  const [activeView, setActiveView] = useState(defaultView);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingCourse, setIsCreatingCourse] = useState(false);
@@ -116,6 +119,18 @@ function Dashboard({ user, token, onLogout }) {
     (course) => user.role === "admin" || course.teacher === user.id,
   );
 
+  const viewRoutes = {
+    overview: "/dashboard",
+    courses: "/courses",
+    enrolled: "/my-learning",
+    manage: "/manage-courses",
+  };
+
+  function goToView(nextView) {
+    setActiveView(nextView);
+    navigate(viewRoutes[nextView] ?? "/dashboard");
+  }
+
   // Navigation switches local views; the corresponding sections below share the same loaded data.
   return (
     <div className="app-shell">
@@ -126,19 +141,19 @@ function Dashboard({ user, token, onLogout }) {
         </a>
         <div className="side-label">LEARNING</div>
         <nav className="side-nav" aria-label="Main navigation">
-          <button className={activeView === "overview" ? "nav-item active" : "nav-item"} onClick={() => setActiveView("overview")}>
+          <button className={activeView === "overview" ? "nav-item active" : "nav-item"} onClick={() => goToView("overview")}>
             <span className="nav-icon" aria-hidden="true">⌂</span> Overview
           </button>
-          <button className={activeView === "courses" ? "nav-item active" : "nav-item"} onClick={() => setActiveView("courses")}>
+          <button className={activeView === "courses" ? "nav-item active" : "nav-item"} onClick={() => goToView("courses")}>
             <span className="nav-icon" aria-hidden="true">▤</span> Explore courses
           </button>
           {canEnroll && (
-            <button className={activeView === "enrolled" ? "nav-item active" : "nav-item"} onClick={() => setActiveView("enrolled")}>
+            <button className={activeView === "enrolled" ? "nav-item active" : "nav-item"} onClick={() => goToView("enrolled")}>
               <span className="nav-icon" aria-hidden="true">◷</span> My learning
             </button>
           )}
           {canManageCourses && (
-            <button className={activeView === "manage" ? "nav-item active" : "nav-item"} onClick={() => setActiveView("manage")}>
+            <button className={activeView === "manage" ? "nav-item active" : "nav-item"} onClick={() => goToView("manage")}>
               <span className="nav-icon" aria-hidden="true">＋</span> Manage courses
             </button>
           )}
@@ -173,7 +188,7 @@ function Dashboard({ user, token, onLogout }) {
               courses={courses}
               enrollments={enrollments}
               enrolledIds={enrolledIds}
-              onViewCourses={() => setActiveView("courses")}
+              onViewCourses={() => goToView("courses")}
               onEnroll={(id) => changeEnrollment(id, api.enroll)}
               onUnenroll={(id) => changeEnrollment(id, api.unenroll)}
               isLoading={isLoading}
@@ -204,11 +219,11 @@ function Dashboard({ user, token, onLogout }) {
               <form key={editingCourse?.id ?? "new-course"} className="manage-card stack" onSubmit={handleSaveCourse}>
                 <div className="manage-form-heading">
                   <h2>{editingCourse ? "Edit course" : "Create a course"}</h2>
-                  {editingCourse && <button type="button" className="text-button" onClick={() => setEditingCourse(null)}>Cancel edit</button>}
+                  {editingCourse && <Button variant="text" onClick={() => setEditingCourse(null)}>Cancel edit</Button>}
                 </div>
                 <label>Course title<input name="title" maxLength="160" defaultValue={editingCourse?.title ?? ""} required /></label>
                 <label>Course description<textarea name="description" rows="5" defaultValue={editingCourse?.description ?? ""} required /></label>
-                <div><button className="button button-primary" disabled={isCreatingCourse}>{isCreatingCourse ? "Saving…" : editingCourse ? "Save changes" : "Publish course"}</button></div>
+                <div><Button type="submit" variant="primary" disabled={isCreatingCourse}>{isCreatingCourse ? "Saving…" : editingCourse ? "Save changes" : "Publish course"}</Button></div>
               </form>
               <div className="managed-courses">
                 <h2>Your courses</h2>
@@ -217,8 +232,8 @@ function Dashboard({ user, token, onLogout }) {
                   <article className="managed-course" key={course.id}>
                     <div><strong>{course.title}</strong><p>{course.description}</p></div>
                     <div className="managed-course-actions">
-                      <button className="button button-outline" onClick={() => setEditingCourse(course)}>Edit</button>
-                      <button className="button button-quiet" onClick={() => handleDeleteCourse(course)}>Delete</button>
+                      <Button variant="outline" onClick={() => setEditingCourse(course)}>Edit</Button>
+                      <Button variant="quiet" onClick={() => handleDeleteCourse(course)}>Delete</Button>
                     </div>
                   </article>
                 ))}
@@ -234,11 +249,42 @@ function Dashboard({ user, token, onLogout }) {
   );
 }
 
+function AppRoutes({ user, token, onAuthenticated, onLogout }) {
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="/" element={<AuthForm onAuthenticated={onAuthenticated} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/dashboard" element={<Dashboard user={user} token={token} onLogout={onLogout} defaultView="overview" />} />
+      <Route path="/courses" element={<Dashboard user={user} token={token} onLogout={onLogout} defaultView="courses" />} />
+      <Route path="/my-learning" element={<Dashboard user={user} token={token} onLogout={onLogout} defaultView="enrolled" />} />
+      <Route path="/manage-courses" element={<Dashboard user={user} token={token} onLogout={onLogout} defaultView="manage" />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
+  );
+}
+
 export default function App() {
+  return (
+    <BrowserRouter>
+      <AppWithState />
+    </BrowserRouter>
+  );
+}
+
+function AppWithState() {
   // The root restores a saved access token, resolves its user, then selects auth or dashboard UI.
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem("northstar-access-token"));
   const [isRestoringSession, setIsRestoringSession] = useState(Boolean(token));
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!token) return;
@@ -248,15 +294,17 @@ export default function App() {
       .catch(() => {
         localStorage.removeItem("northstar-access-token");
         setToken(null);
+        navigate("/");
       })
       .finally(() => setIsRestoringSession(false));
-  }, [token]);
+  }, [token, navigate]);
 
   function handleAuthenticated(authenticatedUser, accessToken) {
     // Persist only the access token; Dashboard receives it for later authenticated API requests.
     localStorage.setItem("northstar-access-token", accessToken);
     setToken(accessToken);
     setUser(authenticatedUser);
+    navigate("/dashboard");
   }
 
   function handleLogout() {
@@ -264,12 +312,19 @@ export default function App() {
     localStorage.removeItem("northstar-access-token");
     setToken(null);
     setUser(null);
+    navigate("/");
   }
 
   if (isRestoringSession) {
     return <main className="loading-screen">Opening your learning space…</main>;
   }
-  return user
-    ? <Dashboard user={user} token={token} onLogout={handleLogout} />
-    : <AuthForm onAuthenticated={handleAuthenticated} />;
+
+  return (
+    <AppRoutes
+      user={user}
+      token={token}
+      onAuthenticated={handleAuthenticated}
+      onLogout={handleLogout}
+    />
+  );
 }
