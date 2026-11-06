@@ -1,3 +1,5 @@
+import Button from "./button/button.jsx";
+
 function CourseCard({ course, isEnrolled, canEnroll, onEnroll, onUnenroll }) {
   return (
     <article className="course-card">
@@ -14,12 +16,12 @@ function CourseCard({ course, isEnrolled, canEnroll, onEnroll, onUnenroll }) {
         <div className="course-footer">
           <span className="teacher-name">with {course.teacher_name}</span>
           {canEnroll && (
-            <button
-              className={`button ${isEnrolled ? "button-quiet" : "button-outline"}`}
+            <Button
+              variant={isEnrolled ? "quiet" : "outline"}
               onClick={() => (isEnrolled ? onUnenroll(course.id) : onEnroll(course.id))}
             >
               {isEnrolled ? "Leave course" : "Explore course"}
-            </button>
+            </Button>
           )}
         </div>
       </div>

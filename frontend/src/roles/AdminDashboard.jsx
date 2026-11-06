@@ -1,3 +1,4 @@
+import Button from "../components/button/button.jsx";
 import CourseList from "../components/CourseList.jsx";
 
 export const permissions = { canEnroll: false, canManageCourses: true };
@@ -21,7 +22,7 @@ export default function AdminDashboard({
           <h1>Good to see you, {user.username} <span aria-hidden="true">✳</span></h1>
           <p className="muted">Here is an overview of the learning space.</p>
         </div>
-        <button className="button button-primary" onClick={onViewCourses}>Explore the library <span aria-hidden="true">↗</span></button>
+        <Button variant="primary" onClick={onViewCourses}>Explore the library <span aria-hidden="true">↗</span></Button>
       </div>
       <div className="stats-grid">
         <div className="stat-card"><span className="stat-icon mint" aria-hidden="true">▤</span><span className="stat-label">COURSES AVAILABLE</span><strong>{courses.length}</strong><span className="stat-foot">In the course library</span></div>
@@ -30,7 +31,7 @@ export default function AdminDashboard({
       </div>
       <div className="section-heading">
         <div><p className="eyebrow">THE COURSE LIBRARY</p><h2>Recently available courses</h2></div>
-        <button className="text-button" onClick={onViewCourses}>View all courses <span aria-hidden="true">→</span></button>
+        <Button variant="text" onClick={onViewCourses}>View all courses <span aria-hidden="true">→</span></Button>
       </div>
       <CourseList
         courses={courses.slice(0, 3)}

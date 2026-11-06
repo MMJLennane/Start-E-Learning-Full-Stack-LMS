@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { api } from "../api.js";
+import Button from "./button/button.jsx";
 
 export default function AuthForm({ onAuthenticated }) {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -73,14 +74,14 @@ export default function AuthForm({ onAuthenticated }) {
             />
           </label>
           {error && <p className="form-error" role="alert">{error}</p>}
-          <button className="button button-primary full-width" disabled={isSubmitting}>
+          <Button type="submit" variant="primary" fullWidth disabled={isSubmitting}>
             {isSubmitting ? "Please wait…" : isRegistering ? "Create account" : "Sign in"}
-          </button>
+          </Button>
         </form>
         <p className="switch-auth">
           {isRegistering ? "Already have an account?" : "New to Northstar?"}{" "}
-          <button
-            className="text-button"
+          <Button
+            variant="text"
             type="button"
             onClick={() => {
               setError("");
@@ -88,7 +89,7 @@ export default function AuthForm({ onAuthenticated }) {
             }}
           >
             {isRegistering ? "Sign in" : "Create an account"}
-          </button>
+          </Button>
         </p>
       </section>
     </main>
