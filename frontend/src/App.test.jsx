@@ -23,7 +23,7 @@ const courses = [
 ];
 
 async function signInAs(role) {
-  vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+  const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
     if (String(url).endsWith("/auth/token/")) {
       return Response.json({ access: "access-token", refresh: "refresh-token" });
     }
@@ -33,6 +33,21 @@ async function signInAs(role) {
     if (String(url).endsWith("/enrollments/")) {
       return Response.json([]);
     }
+    if (String(url).endsWith("/admin/users/")) {
+      return Response.json([
+        { id: 3, username: "learner", email: "learner@example.com", role: "student", is_active: true, date_joined: "2025-01-01T00:00:00Z" },
+      ]);
+    }
+    if (String(url).includes("/admin/users/") && String(url).endsWith("/role/")) {
+      return Response.json({
+        id: 3,
+        username: "learner",
+        email: "learner@example.com",
+        role: "teacher",
+        is_active: true,
+        date_joined: "2025-01-01T00:00:00Z",
+      });
+    }
     return Response.json(courses);
   });
 
@@ -40,6 +55,7 @@ async function signInAs(role) {
   fireEvent.change(screen.getByLabelText("Username"), { target: { value: "sam" } });
   fireEvent.change(screen.getByLabelText("Password"), { target: { value: "a-secure-password" } });
   fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+  return fetchMock;
 }
 
 // UI tests mock the API boundary and verify user-visible authentication flows.
@@ -95,7 +111,7 @@ describe("Learning Management System", () => {
     expect(await screen.findByRole("heading", { name: "Your courses" })).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Designing with care" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "A second course" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Manage courses" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Teacher tasks" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "My learning" })).not.toBeInTheDocument();
   });
 
@@ -105,8 +121,22 @@ describe("Learning Management System", () => {
     expect(await screen.findByRole("heading", { name: "Recently available courses" })).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Designing with care" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "A second course" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Manage courses" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Administrator tasks" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "My learning" })).not.toBeInTheDocument();
+  });
+
+  it("lets administrators review accounts and update a student role", async () => {
+    const fetchMock = await signInAs("admin");
+    fireEvent.click(await screen.findByRole("button", { name: "Administrator tasks" }));
+
+    const roleSelector = await screen.findByLabelText("Role for learner");
+    fireEvent.change(roleSelector, { target: { value: "teacher" } });
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/admin/users/3/role/"),
+      expect.objectContaining({ method: "PATCH" }),
+    ));
+    expect(screen.getByRole("heading", { name: "Administrator tasks" })).toBeInTheDocument();
   });
 
   it("shows API failures instead of silently hiding them", async () => {

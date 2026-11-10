@@ -18,7 +18,7 @@
 }
 
 .button-primary {
-  color: #fff;
+  color: var(--paper);
   background: var(--green);
 }
 
@@ -28,19 +28,19 @@
 
 .button-outline {
   color: var(--green);
-  border-color: #cbd8ce;
-  background: white;
+  border-color: var(--line);
+  background: var(--paper);
 }
 
 .button-outline:hover,
 .button-quiet:hover {
-  background: #edf4ee;
+  background: var(--mint);
 }
 
 .button-quiet {
-  color: #59665e;
+  color: var(--muted);
   border-color: var(--line);
-  background: #f6f8f5;
+  background: var(--mint);
 }
 
 .full-width {
@@ -58,5 +58,5 @@
 }
 
 .text-button:hover {
-  color: #547a65;
+  color: var(--green-dark);
 }

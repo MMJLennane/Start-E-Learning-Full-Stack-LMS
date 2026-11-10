@@ -23,3 +23,22 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("id", "username", "email", "role", "is_active", "date_joined")
+        read_only_fields = fields
+
+
+class AdminUserRoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("id", "username", "email", "role", "is_active", "date_joined")
+        read_only_fields = ("id", "username", "email", "is_active", "date_joined")
+
+    def validate_role(self, value):
+        if value not in (User.Role.STUDENT, User.Role.TEACHER):
+            raise serializers.ValidationError("Administrators can assign student or teacher roles only.")
+        return value

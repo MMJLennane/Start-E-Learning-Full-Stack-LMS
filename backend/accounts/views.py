@@ -1,6 +1,20 @@
 from rest_framework import generics, permissions
+from .models import User
+from .serializers import (
+    AdminUserRoleSerializer,
+    AdminUserSerializer,
+    RegistrationSerializer,
+    UserSerializer,
+)
 
-from .serializers import RegistrationSerializer, UserSerializer
+
+class IsLmsAdministrator(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.role == User.Role.ADMIN
+        )
 
 
 class RegistrationView(generics.CreateAPIView):
@@ -15,3 +29,16 @@ class CurrentUserView(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class AdminUserListView(generics.ListAPIView):
+    serializer_class = AdminUserSerializer
+    permission_classes = (IsLmsAdministrator,)
+    queryset = User.objects.order_by("username")
+
+
+class AdminUserRoleView(generics.UpdateAPIView):
+    serializer_class = AdminUserRoleSerializer
+    permission_classes = (IsLmsAdministrator,)
+    queryset = User.objects.exclude(role=User.Role.ADMIN).exclude(is_superuser=True)
+    http_method_names = ("patch", "options", "head")

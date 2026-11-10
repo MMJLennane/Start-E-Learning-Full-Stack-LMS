@@ -3,7 +3,12 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from accounts.views import CurrentUserView, RegistrationView
+from accounts.views import (
+    AdminUserListView,
+    AdminUserRoleView,
+    CurrentUserView,
+    RegistrationView,
+)
 from courses.views import CourseViewSet, EnrollmentListView
 
 # The router turns CourseViewSet actions into catalog, detail, and enrollment URLs.
@@ -17,6 +22,12 @@ urlpatterns = [
     path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/auth/me/", CurrentUserView.as_view(), name="current_user"),
+    path("api/admin/users/", AdminUserListView.as_view(), name="admin_users"),
+    path(
+        "api/admin/users/<int:pk>/role/",
+        AdminUserRoleView.as_view(),
+        name="admin_user_role",
+    ),
     path("api/enrollments/", EnrollmentListView.as_view(), name="enrollments"),
     path("api/", include(router.urls)),
 ]

@@ -56,13 +56,29 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-# SQLite is the local default; Django's model layer uses this setting for persistence.
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+# MySQL is the default database; SQLite remains available for isolated tests and demos.
+DB_ENGINE = os.environ.get("DB_ENGINE", "mysql").lower()
+if DB_ENGINE == "sqlite":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+elif DB_ENGINE == "mysql":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.environ.get("MYSQL_DATABASE", "northstar_learning"),
+            "USER": os.environ.get("MYSQL_USER", "northstar"),
+            "PASSWORD": os.environ.get("MYSQL_PASSWORD", ""),
+            "HOST": os.environ.get("MYSQL_HOST", "127.0.0.1"),
+            "PORT": os.environ.get("MYSQL_PORT", "3306"),
+            "OPTIONS": {"charset": "utf8mb4"},
+        }
+    }
+else:
+    raise ValueError("DB_ENGINE must be either 'mysql' or 'sqlite'.")
 
 # Use the LMS user model throughout Django auth and model relationships.
 AUTH_USER_MODEL = "accounts.User"
