@@ -4,15 +4,16 @@ Northstar Learning is a full-stack learning management system for students, teac
 
 ## Page flow
 
-The application is organized as five page types:
+The application is organized as six page types:
 
 1. **Splash and sign-in** (`/`) — sign in or register a student account.
 2. **Role workspace** (`/dashboard`) — a Student, Teacher, or Administrator overview.
 3. **Courses** (`/courses`) — browse the course library; students can enroll and unenroll.
-4. **Teacher tasks** (`/teacher-tasks`) — teachers create, edit, and delete their own courses. Administrators can manage all courses from this page.
-5. **Administrator tasks** (`/admin-tasks`) — administrators review account status and assign Student or Teacher roles.
+4. **Student lounge** (`/student-lounge`) — signed-in students get a course overview, course previews, and contact details for teachers of courses they have joined.
+5. **Teacher dashboard** (`/teacher-tasks`) — signed-in teachers create, edit, and delete their own courses. Administrators can manage all courses from this page.
+6. **Administrator tasks** (`/admin-tasks`) — signed-in administrators review account status and assign Student or Teacher roles. Other signed-in roles see an administrator-only notice.
 
-Students also have a **My learning** page (`/my-learning`). Route access is role-checked in the frontend and permissions are enforced independently by the API. Public registration always creates a student; it cannot grant teacher or administrator access.
+Students also have a **My learning** page (`/my-learning`). The top menu only shows pages allowed for the signed-in role; direct route access is role-checked in the frontend and permissions are enforced independently by the API. Public registration always creates a student; it cannot grant teacher or administrator access.
 
 ## Design and shared styles
 
@@ -97,7 +98,7 @@ All API paths are under `/api/`. Protected endpoints require `Authorization: Bea
 | `GET`, `PUT`, `PATCH`, `DELETE` | `/courses/{id}/` | Public read; owner teacher/admin write | View or manage a course |
 | `POST` | `/courses/{id}/enroll/` | Student | Enroll in a course |
 | `DELETE` | `/courses/{id}/unenroll/` | Student | Leave a course |
-| `GET` | `/enrollments/` | Authenticated student | List the current student's enrollments |
+| `GET` | `/enrollments/` | Authenticated student | List the current student's enrollments with teacher email addresses; emails are not exposed in the public course catalog. |
 | `GET` | `/admin/users/` | Administrator | List account role and status information |
 | `PATCH` | `/admin/users/{id}/role/` | Administrator | Assign `student` or `teacher` to an account |
 
