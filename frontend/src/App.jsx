@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-route
 import { api } from "./api.js";
 import AuthForm from "./components/AuthForm.jsx";
 import Workspace from "./components/Workspace.jsx";
+import Button from "./components/button/button.jsx";
 
 function AppRoutes({ user, token, onAuthenticated, onLogout }) {
   if (!user) {
@@ -27,12 +28,29 @@ function AppRoutes({ user, token, onAuthenticated, onLogout }) {
         : <Navigate to="/dashboard" replace />} />
       <Route path="/teacher-tasks" element={isTeacher
         ? <Workspace page="teacher" user={user} token={token} onLogout={onLogout} />
-        : <Navigate to="/dashboard" replace />} />
+        : <RoleAccessNotice role="Teacher" />} />
       <Route path="/admin-tasks" element={isAdmin
         ? <Workspace page="admin" user={user} token={token} onLogout={onLogout} />
-        : <Navigate to="/dashboard" replace />} />
+        : <RoleAccessNotice role="Admin" />} />
+      <Route path="/student-lounge" element={user.role === "student"
+        ? <Workspace page="lounge" user={user} token={token} onLogout={onLogout} />
+        : <RoleAccessNotice role="Student" />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+  );
+}
+
+function RoleAccessNotice({ role }) {
+  const navigate = useNavigate();
+
+  return (
+    <main className="access-notice">
+      <span className="brand-mark" aria-hidden="true">N</span>
+      <p className="eyebrow">NORTHSTAR LEARNING</p>
+      <h1>This page is for {role} only</h1>
+      <p className="muted">Sign in with an account that has the required role to continue.</p>
+      <Button variant="outline" onClick={() => navigate("/dashboard")}>Back to my dashboard</Button>
+    </main>
   );
 }
 
