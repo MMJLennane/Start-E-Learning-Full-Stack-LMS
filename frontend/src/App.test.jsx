@@ -110,9 +110,41 @@ describe("Learning Management System", () => {
 
     expect(await screen.findByRole("heading", { name: "Your courses" })).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Designing with care" })).toBeInTheDocument();
+    expect(screen.getByText("Teachers create and manage courses, support learners, and track participation.")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "A second course" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Teacher tasks" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Teacher dashboard" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "My learning" })).not.toBeInTheDocument();
+  });
+
+  it("shows the student lounge and contact details for enrolled-course teachers", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+      if (String(url).endsWith("/auth/token/")) {
+        return Response.json({ access: "access-token", refresh: "refresh-token" });
+      }
+      if (String(url).endsWith("/auth/me/")) {
+        return Response.json({ id: 1, username: "sam", role: "student" });
+      }
+      if (String(url).endsWith("/enrollments/")) {
+        return Response.json([{
+          id: 1,
+          teacher_email: "teacher@example.com",
+          course: { ...courses[0], teacher: 2 },
+        }]);
+      }
+      return Response.json(courses);
+    });
+
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Username"), { target: { value: "sam" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "a-secure-password" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    fireEvent.click(await screen.findByRole("link", { name: "Student lounge" }));
+
+    expect(await screen.findByRole("heading", { name: "Settle in. Find your next spark." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Computer Hardware 101" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your teachers" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "teacher@example.com" })).toHaveAttribute("href", "mailto:teacher@example.com");
   });
 
   it("shows admins the full course library and management navigation", async () => {
