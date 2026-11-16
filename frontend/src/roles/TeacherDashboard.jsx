@@ -21,7 +21,7 @@ export default function TeacherDashboard({
         <div>
           <p className="eyebrow">YOUR TEACHING, AT A GLANCE</p>
           <h1>Good to see you, {user.username} <span aria-hidden="true">✳</span></h1>
-          <p className="muted">Share what you know and help learners take their next step.</p>
+          <p className="muted">Teachers create and manage courses, support learners, and track participation.</p>
         </div>
         <Button variant="primary" onClick={onViewCourses}>Explore the library <span aria-hidden="true">↗</span></Button>
       </div>
