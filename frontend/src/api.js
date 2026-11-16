@@ -39,4 +39,11 @@ export const api = {
     request(`/courses/${courseId}/`, { method: "PATCH", body: JSON.stringify(details), token }),
   deleteCourse: (courseId, token) =>
     request(`/courses/${courseId}/`, { method: "DELETE", token }),
+  listUsers: (token) => request("/admin/users/", { token }),
+  updateUserRole: (accountId, role, token) =>
+    request(`/admin/users/${accountId}/role/`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+      token,
+    }),
 };
