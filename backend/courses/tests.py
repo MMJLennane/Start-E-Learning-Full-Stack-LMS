@@ -42,6 +42,27 @@ class CourseApiTests(APITestCase):
         enrolled_response = self.client.get("/api/enrollments/")
         self.assertEqual(enrolled_response.status_code, 200)
         self.assertEqual(enrolled_response.data[0]["course"]["id"], self.course.id)
+        self.assertEqual(enrolled_response.data[0]["teacher_email"], "")
+
+    def test_enrollment_contact_details_are_limited_to_the_students_own_courses(self):
+        self.teacher.email = "teacher@example.com"
+        self.teacher.save(update_fields=("email",))
+        other_course = Course.objects.create(
+            title="Another course",
+            description="Not enrolled",
+            teacher=self.other_teacher,
+        )
+        self.client.force_authenticate(self.student)
+        self.client.post(f"/api/courses/{self.course.id}/enroll/")
+
+        response = self.client.get("/api/enrollments/")
+        catalog_response = self.client.get("/api/courses/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["teacher_email"], "teacher@example.com")
+        self.assertNotIn("teacher_email", catalog_response.data[0])
+        self.assertNotEqual(response.data[0]["course"]["id"], other_course.id)
 
     def test_repeated_enrollment_does_not_create_duplicates(self):
         self.client.force_authenticate(self.student)
