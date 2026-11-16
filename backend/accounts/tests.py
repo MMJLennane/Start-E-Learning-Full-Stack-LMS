@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
+from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
 
@@ -43,6 +44,16 @@ class AdminUserApiTests(APITestCase):
         response = self.client.get("/api/admin/users/")
 
         self.assertEqual(response.status_code, 403)
+
+    def test_admin_user_endpoint_requires_a_jwt(self):
+        response = self.client.get("/api/admin/users/")
+        self.assertEqual(response.status_code, 401)
+
+        access_token = RefreshToken.for_user(self.admin).access_token
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+        authenticated_response = self.client.get("/api/admin/users/")
+
+        self.assertEqual(authenticated_response.status_code, 200)
 
     def test_administrator_can_list_accounts_and_change_student_role(self):
         self.client.force_authenticate(self.admin)
