@@ -25,7 +25,8 @@ class CourseSerializer(serializers.ModelSerializer):
 class EnrollmentSerializer(serializers.ModelSerializer):
     # Nest course details so the frontend can render a student's learning list directly.
     course = CourseSerializer(read_only=True)
+    teacher_email = serializers.EmailField(source="course.teacher.email", read_only=True)
 
     class Meta:
         model = Enrollment
-        fields = ("id", "course", "enrolled_at")
+        fields = ("id", "course", "teacher_email", "enrolled_at")
