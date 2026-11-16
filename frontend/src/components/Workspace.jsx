@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import { api } from "../api.js";
 import Button from "./button/button.jsx";
@@ -7,6 +7,7 @@ import CourseList from "./CourseList.jsx";
 import AdminDashboard, { permissions as adminPermissions } from "../roles/AdminDashboard.jsx";
 import StudentDashboard, { permissions as studentPermissions } from "../roles/StudentDashboard.jsx";
 import TeacherDashboard, { permissions as teacherPermissions } from "../roles/TeacherDashboard.jsx";
+import StudentLounge from "./StudentLounge.jsx";
 
 const roleNames = { student: "Student", teacher: "Teacher", admin: "Administrator" };
 const roleModules = {
@@ -20,6 +21,7 @@ const pageDetails = {
   enrolled: { title: "My learning", path: "/my-learning" },
   teacher: { title: "Teacher tasks", path: "/teacher-tasks" },
   admin: { title: "Administrator tasks", path: "/admin-tasks" },
+  lounge: { title: "Student lounge", path: "/student-lounge" },
 };
 
 export default function Workspace({ page, user, token, onLogout }) {
@@ -44,6 +46,13 @@ export default function Workspace({ page, user, token, onLogout }) {
     (course) => user.role === "admin" || course.teacher === user.id,
   );
   const activePage = pageDetails[page] ?? pageDetails.overview;
+  const topNavItems = [
+    { label: user.role === "teacher" ? "Teacher dashboard" : "Overview", path: "/dashboard", visible: true },
+    { label: "Courses", path: "/courses", visible: true },
+    { label: "Student lounge", path: "/student-lounge", visible: user.role === "student" },
+    { label: "Teacher tasks", path: "/teacher-tasks", visible: isTeacher },
+    { label: "Admin", path: "/admin-tasks", visible: isAdmin },
+  ];
 
   const loadWorkspace = useCallback(async () => {
     setError("");
@@ -141,6 +150,7 @@ export default function Workspace({ page, user, token, onLogout }) {
           <NavButton active={page === "overview"} onClick={() => navigateTo("overview")}>Overview</NavButton>
           <NavButton active={page === "courses"} onClick={() => navigateTo("courses")}>Courses</NavButton>
           {canEnroll && <NavButton active={page === "enrolled"} onClick={() => navigateTo("enrolled")}>My learning</NavButton>}
+          {user.role === "student" && <NavButton active={page === "lounge"} onClick={() => navigateTo("lounge")}>Student lounge</NavButton>}
           {isTeacher && <NavButton active={page === "teacher"} onClick={() => navigateTo("teacher")}>Teacher tasks</NavButton>}
           {isAdmin && <NavButton active={page === "admin"} onClick={() => navigateTo("admin")}>Administrator tasks</NavButton>}
         </nav>
@@ -157,6 +167,13 @@ export default function Workspace({ page, user, token, onLogout }) {
       <main className="main-panel">
         <header className="topbar">
           <div className="breadcrumb"><span>Workspace</span><span aria-hidden="true">/</span><strong>{activePage.title}</strong></div>
+          <nav className="top-menu" aria-label="Top navigation">
+            {topNavItems.filter(({ visible }) => visible).map(({ label, path }) => (
+              <NavLink key={path} to={path} end className={({ isActive }) => isActive ? "top-menu-link active" : "top-menu-link"}>
+                {label}
+              </NavLink>
+            ))}
+          </nav>
           <div className="topbar-right"><span className="today-label">A good day to learn something new.</span><div className="avatar avatar-small">{user.username.slice(0, 1).toUpperCase()}</div></div>
         </header>
         <section className="page-content">
@@ -191,6 +208,17 @@ export default function Workspace({ page, user, token, onLogout }) {
                 isLoading={isLoading}
               />
             </>
+          )}
+
+          {page === "lounge" && user.role === "student" && (
+            <StudentLounge
+              courses={courses}
+              enrollments={enrollments}
+              enrolledIds={enrolledIds}
+              onEnroll={(id) => changeEnrollment(id, api.enroll)}
+              onUnenroll={(id) => changeEnrollment(id, api.unenroll)}
+              isLoading={isLoading}
+            />
           )}
 
           {page === "teacher" && isTeacher && (
